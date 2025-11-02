@@ -9,14 +9,12 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install Playwright
         run: |
-          npm install playwright
+          npm install playwright node-fetch
           npx playwright install --with-deps
 
-      - name: Fetch price from Eraspace
-        run: |
-          node fetch.js
+      - name: Fetch price
+        run: node fetch.js
