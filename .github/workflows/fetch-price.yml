@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # --- Install dependency sistem untuk Chromium ---
+      # --- Install dependency Chromium ---
       - name: Install System Packages
         run: |
           sudo apt-get update
@@ -27,16 +27,17 @@ jobs:
           npx playwright install chromium
           sleep 3
 
-      # --- Jalankan fetch.js dengan headless Chromium ---
+      # --- Jalankan fetch.js ---
       - name: Jalankan Fetch Script (Eraspace)
-        run: |
-          xvfb-run --auto-servernum node fetch.js
+        run: xvfb-run --auto-servernum node fetch.js
 
-      # --- Upload screenshot jika halaman gagal dimuat ---
-      - name: Upload screenshot bila ada
+      # --- Upload hasil debug (screenshot + html) ---
+      - name: Upload debug artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: page-debug
-          path: page.png
+          name: debug-artifacts
+          path: |
+            debug_page.png
+            debug_page.html
           if-no-files-found: ignore
