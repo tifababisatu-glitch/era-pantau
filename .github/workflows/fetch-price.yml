@@ -11,22 +11,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # --- Install dependencies untuk Chromium ---
+      # --- Install dependency sistem untuk Chromium ---
       - name: Install System Packages
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             libnss3 libatk1.0-0 libatk-bridge2.0-0 libdrm2 libxkbcommon0 \
-            libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 \
-            libxshmfence1 xvfb
+            libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
+            libxshmfence1 libasound2t64 xvfb || true
 
-      # --- Install Node packages ---
+      # --- Install Node.js packages (Playwright + fetch) ---
       - name: Install Node Packages
         run: |
           npm install playwright node-fetch
           npx playwright install chromium
+          sleep 3
 
       # --- Jalankan fetch.js ---
-      - name: Run fetch.js headless
+      - name: Jalankan Fetch Script (Eraspace)
         run: |
           xvfb-run --auto-servernum node fetch.js
