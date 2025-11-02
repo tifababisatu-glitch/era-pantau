@@ -17,7 +17,7 @@ const WORKER_ENDPOINT = "https://pantau-era.tifababisatu.workers.dev/update";
 
   console.log("🌐 Membuka halaman:", PRODUCT.url);
 
-  // --- STEP 1: Buka halaman dengan timeout panjang dan retry ---
+  // STEP 1 — buka halaman dengan retry dan timeout panjang
   try {
     await page.goto(PRODUCT.url, { waitUntil: "domcontentloaded", timeout: 90000 });
   } catch (e) {
@@ -32,26 +32,24 @@ const WORKER_ENDPOINT = "https://pantau-era.tifababisatu.workers.dev/update";
     }
   }
 
-  // --- STEP 2: Tunggu agar JavaScript halaman selesai render ---
+  // STEP 2 — tunggu supaya elemen harga sempat render
   await page.waitForTimeout(15000);
   const title = await page.title();
   console.log("🕓 Halaman terbuka:", title);
 
-  // --- STEP 3: Simpan HTML dan Screenshot untuk debug ---
+  // STEP 3 — simpan HTML dan screenshot
   const html = await page.content();
   fs.writeFileSync("debug_page.html", html, "utf-8");
   await page.screenshot({ path: "debug_page.png", fullPage: true });
-  console.log("📸 Screenshot dan HTML disimpan untuk debug.");
+  console.log("📸 Screenshot dan HTML disimpan (debug_page.*)");
 
-  // --- STEP 4: Cari harga dari berbagai pola ---
+  // STEP 4 — cari harga dengan regex spesifik Eraspace
   const match =
-    html.match(/"price"\s*:\s*"(\d+)"/i) ||
-    html.match(/"selling_price"\s*:\s*(\d+)/i) ||
-    html.match(/"normal_price"\s*:\s*"(\d+)"/i) ||
+    html.match(/<[^>]*class="[^"]*product-price[^"]*"[^>]*>Rp\s*([\d\.\,]+)/i) ||
     html.match(/Rp\s*([\d\.\,]+)/i);
 
   if (!match) {
-    console.error("❌ Tidak ditemukan harga. Lihat debug_page.html.");
+    console.error("❌ Tidak ditemukan harga. Cek debug_page.html untuk struktur terbaru.");
     await browser.close();
     process.exit(1);
   }
@@ -59,7 +57,7 @@ const WORKER_ENDPOINT = "https://pantau-era.tifababisatu.workers.dev/update";
   const price = parseInt(match[1].replace(/[^\d]/g, ""), 10);
   console.log(`✅ ${PRODUCT.name}: Rp ${price.toLocaleString("id-ID")}`);
 
-  // --- STEP 5: Kirim data ke Cloudflare Worker ---
+  // STEP 5 — kirim ke Cloudflare Worker
   try {
     const res = await fetch(WORKER_ENDPOINT, {
       method: "POST",
@@ -72,5 +70,5 @@ const WORKER_ENDPOINT = "https://pantau-era.tifababisatu.workers.dev/update";
   }
 
   await browser.close();
-  console.log("🏁 Selesai — debug fetch.js");
+  console.log("🏁 Selesai — fetch.js (debug mode aktif)");
 })();
