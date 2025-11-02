@@ -1,6 +1,9 @@
 {
+  "name": "era-pantau",
+  "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "node-fetch": "^3.3.2"
+    "puppeteer": "^23.0.0",
+    "dotenv": "^16.3.1"
   }
 }
