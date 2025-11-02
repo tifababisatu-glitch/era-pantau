@@ -27,7 +27,16 @@ jobs:
           npx playwright install chromium
           sleep 3
 
-      # --- Jalankan fetch.js ---
+      # --- Jalankan fetch.js dengan headless Chromium ---
       - name: Jalankan Fetch Script (Eraspace)
         run: |
           xvfb-run --auto-servernum node fetch.js
+
+      # --- Upload screenshot jika halaman gagal dimuat ---
+      - name: Upload screenshot bila ada
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: page-debug
+          path: page.png
+          if-no-files-found: ignore
