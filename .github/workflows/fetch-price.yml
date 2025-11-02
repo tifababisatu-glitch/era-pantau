@@ -11,10 +11,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Playwright
+      # --- Install dependency yang dibutuhkan Chromium ---
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libdrm2 libxkbcommon0 \
+            libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 \
+            libxshmfence1 xvfb
+
+      # --- Install Node.js packages ---
+      - name: Install Node Packages
         run: |
           npm install playwright node-fetch
-          npx playwright install --with-deps
+          npx playwright install chromium
 
-      - name: Fetch price from Eraspace
-        run: node fetch.js
+      # --- Jalankan script fetch.js ---
+      - name: Jalankan Fetch Script (Eraspace)
+        run: |
+          xvfb-run --auto-servernum node fetch.js
