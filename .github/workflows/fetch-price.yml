@@ -1,43 +1,24 @@
-name: Fetch Eraspace Price
+name: Fetch Price
 
 on:
-  schedule:
-    - cron: "0 * * * *"   # setiap 1 jam
   workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *" # Jalankan tiap 6 jam
 
 jobs:
-  fetch:
+  run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      # --- Install dependency Chromium ---
-      - name: Install System Packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libnss3 libatk1.0-0 libatk-bridge2.0-0 libdrm2 libxkbcommon0 \
-            libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
-            libxshmfence1 libasound2t64 xvfb || true
-
-      # --- Install Node.js packages (Playwright + fetch) ---
-      - name: Install Node Packages
-        run: |
-          npm install playwright node-fetch
-          npx playwright install chromium
-          sleep 3
-
-      # --- Jalankan fetch.js ---
-      - name: Jalankan Fetch Script (Eraspace)
-        run: xvfb-run --auto-servernum node fetch.js
-
-      # --- Upload hasil debug (screenshot + html) ---
-      - name: Upload debug artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: debug-artifacts
-          path: |
-            debug_page.png
-            debug_page.html
-          if-no-files-found: ignore
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Jalankan Fetch Harga
+        run: xvfb-run --auto-servernum node fetch.js
