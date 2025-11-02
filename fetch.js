@@ -13,7 +13,7 @@ async function safeWait(page, ms) {
   if (typeof page.waitForTimeout === "function") {
     await page.waitForTimeout(ms);
   } else {
-    await new Promise(r => setTimeout(r, ms));
+    await new Promise((r) => setTimeout(r, ms));
   }
 }
 
@@ -65,6 +65,35 @@ async function main() {
 
     console.log("💰 Harga ditemukan:", harga);
     await sendTelegram(`✅ HONOR 400 5G: ${harga}`);
+
+    // =======================================
+    // ✅ Simpan hasil ke Cloudflare KV
+    // =======================================
+    if (
+      harga &&
+      process.env.CLOUDFLARE_API_TOKEN &&
+      process.env.CLOUDFLARE_ACCOUNT_ID &&
+      process.env.KV_NAMESPACE_ID
+    ) {
+      const kvUrl = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${process.env.KV_NAMESPACE_ID}/values/last_price`;
+
+      try {
+        const res = await fetch(kvUrl, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+            "Content-Type": "text/plain",
+          },
+          body: harga,
+        });
+
+        console.log(`✅ Menyimpan harga ke Cloudflare KV: ${res.status}`);
+      } catch (err) {
+        console.error("❌ Gagal menyimpan ke KV:", err);
+      }
+    } else {
+      console.warn("⚠️ ENV Cloudflare belum lengkap, tidak menyimpan ke KV.");
+    }
   } catch (err) {
     console.error("💥 Error:", err);
     await sendTelegram(`❌ Gagal mengambil harga: ${err.message}`);
