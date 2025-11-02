@@ -1,47 +1,24 @@
-// ========================================
-// ERA PANTAU — Harga Otomatis Eraspace
-// ========================================
-
 import puppeteer from "puppeteer";
-import fs from "fs";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
 
-// ===============================
-// 🔧 Konfigurasi
-// ===============================
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const PRODUCT_URL = "https://eraspace.com/eraspace/produk/honor-400-5g";
-const DEBUG_FILE = "debug_page.html";
+const url = "https://eraspace.com/eraspace/produk/honor-400-5g";
+const token = process.env.TELEGRAM_TOKEN;
+const chatId = process.env.TELEGRAM_CHAT_ID;
 
-// ===============================
-// 📤 Kirim Notifikasi Telegram
-// ===============================
-async function sendTelegram(message) {
-  const apiUrl = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-  try {
-    await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: "Markdown",
-      }),
-    });
-    console.log("📩 Telegram terkirim:", message);
-  } catch (err) {
-    console.error("⚠️ Gagal kirim Telegram:", err.message);
+// helper agar kompatibel di semua versi Puppeteer
+async function safeWait(page, ms) {
+  if (typeof page.waitForTimeout === "function") {
+    await page.waitForTimeout(ms);
+  } else {
+    await new Promise(r => setTimeout(r, ms));
   }
 }
 
-// ===============================
-// 🚀 Main Function
-// ===============================
 async function main() {
-  console.log(`🌐 Mengambil halaman: ${PRODUCT_URL}`);
+  console.log("🌐 Mengambil halaman:", url);
 
   const browser = await puppeteer.launch({
     headless: "new",
@@ -49,71 +26,64 @@ async function main() {
   });
   const page = await browser.newPage();
 
-  // Buka halaman dan tunggu JS selesai render
-  await page.goto(PRODUCT_URL, { waitUntil: "networkidle2", timeout: 60000 });
-  await page.waitForTimeout(5000);
-
-  const html = await page.content();
-  fs.writeFileSync(DEBUG_FILE, html);
-
-  // ===============================
-  // 🎯 Ambil harga dari berbagai kemungkinan
-  // ===============================
-  let price = null;
-
-  // 1️⃣ Coba meta tag OG
   try {
-    price = await page.$eval(
-      'meta[property="product:price:amount"]',
-      (el) => el.content
-    );
-  } catch {}
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
 
-  // 2️⃣ Coba elemen HTML yang mengandung “Rp”
-  if (!price) {
-    const selectors = [
-      '[class*="price"]',
-      '[data-testid*="price"]',
-      "span:has-text('Rp')",
-      ".text-primary",
-      ".text-price",
-    ];
+    // Tunggu JS render dan scroll agar produk muncul penuh
+    await safeWait(page, 6000);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await safeWait(page, 3000);
 
-    for (const selector of selectors) {
-      try {
-        const val = await page.$eval(selector, (el) => el.textContent.trim());
-        if (val && val.includes("Rp")) {
-          price = val;
-          break;
+    // Ambil seluruh HTML untuk debug
+    const html = await page.content();
+    fs.writeFileSync("debug_page.html", html);
+
+    // Coba ambil harga dari beberapa kemungkinan selector
+    const harga = await page.evaluate(() => {
+      const possibleSelectors = [
+        "[class*='price']",
+        "[data-testid*='price']",
+        "div[class*='Price']",
+        "span[class*='Price']",
+        ".text-price",
+        ".product-price",
+        "p:contains('Rp')"
+      ];
+      for (const sel of possibleSelectors) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText && el.innerText.includes("Rp")) {
+          return el.innerText.trim();
         }
-      } catch {}
+      }
+      return null;
+    });
+
+    if (!harga) {
+      console.log("❌ Tidak ditemukan meta harga dalam HTML (cek debug_page.html)");
+      throw new Error("Harga tidak ditemukan di halaman");
     }
-  }
 
-  // ===============================
-  // 💰 Jika tidak ada harga
-  // ===============================
-  if (!price) {
-    console.log("❌ Tidak ditemukan harga (cek debug_page.html)");
-    await sendTelegram("❌ HONOR 400 5G (Eraspace): Harga tidak ditemukan");
+    console.log("💰 Harga ditemukan:", harga);
+    await sendTelegram(`✅ HONOR 400 5G: ${harga}`);
+  } catch (err) {
+    console.error("💥 Error:", err);
+    await sendTelegram(`❌ Gagal mengambil harga: ${err.message}`);
+  } finally {
     await browser.close();
-    process.exit(1);
   }
-
-  // ===============================
-  // 🧮 Format harga
-  // ===============================
-  const clean = price.replace(/[^\d]/g, "");
-  const formatted = `Rp ${clean.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
-
-  console.log(`✅ Harga ditemukan: ${formatted}`);
-
-  await sendTelegram(`✅ HONOR 400 5G (Eraspace): *${formatted}*`);
-  await browser.close();
 }
 
-main().catch((err) => {
-  console.error("💥 Error:", err);
-  sendTelegram(`⚠️ Gagal memproses harga: ${err.message}`);
-  process.exit(1);
-});
+async function sendTelegram(msg) {
+  if (!token || !chatId) {
+    console.error("⚠️ TELEGRAM_TOKEN atau TELEGRAM_CHAT_ID tidak diset di .env");
+    return;
+  }
+  const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+  await fetch(telegramUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text: msg }),
+  });
+}
+
+main();
