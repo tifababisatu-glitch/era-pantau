@@ -1,7 +1,6 @@
 {
   "type": "module",
   "dependencies": {
-    "playwright": "^1.48.2",
     "node-fetch": "^3.3.2"
   }
 }
