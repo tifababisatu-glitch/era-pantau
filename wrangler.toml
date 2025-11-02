@@ -1,0 +1,7 @@
+name = "price-watcher"
+main = "worker.js"
+compatibility_date = "2025-11-02"
+
+[[kv_namespaces]]
+binding = "PRICES"
+id = "MASUKKAN_NAMESPACE_ID"
