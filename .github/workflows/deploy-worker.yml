@@ -1,21 +1,30 @@
-name: Deploy Cloudflare Worker
+name: Deploy Worker
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+    paths:
+      - "worker.js"
+      - "wrangler.toml"
+      - ".github/workflows/deploy-worker.yml"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Publish to Cloudflare
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # ⚙️ Install Wrangler versi terbaru (v4+)
+      - name: Install latest Wrangler
+        run: npm install -g wrangler@latest
+
+      # 🚀 Deploy ke Cloudflare Worker
+      - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
-          wranglerVersion: "3.82.0"   # versi stabil
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: publish
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
+          command: deploy
