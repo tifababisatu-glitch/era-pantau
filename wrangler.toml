@@ -1,7 +1,7 @@
-name = "price-watcher"
+name = "pantau-era"
 main = "worker.js"
 compatibility_date = "2025-11-02"
 
 [[kv_namespaces]]
-binding = "PRICES"
-id = "MASUKKAN_NAMESPACE_ID"
+binding = "era_tracker"
+id = "038cee357d1f4fd7872b6c3ef89f82d9"
