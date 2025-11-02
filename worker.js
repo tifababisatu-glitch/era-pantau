@@ -4,11 +4,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // ✅ Ambil token dari environment secrets
+    // 🔐 Ambil token dari environment secrets (GitHub)
     const BOT_TOKEN = env.BOT_TOKEN;
     const CHAT_ID = env.CHAT_ID;
 
-    // === Endpoint: /update ===
+    // === Endpoint untuk update harga ===
     if (url.pathname === '/update' && request.method === 'POST') {
       const data = await request.json();
       const key = `price_${data.product}`;
@@ -29,13 +29,13 @@ export default {
       return new Response('OK');
     }
 
-    // === Endpoint: /check ===
+    // === Endpoint untuk cek harga terakhir ===
     const last = await env.era_tracker.get('price_HONOR 400 5G');
     return new Response(`Last price: Rp ${parseInt(last || '0').toLocaleString('id-ID')}`);
   },
 };
 
-// === Fungsi Kirim Telegram ===
+// === Fungsi kirim pesan ke Telegram ===
 async function sendTelegram(BOT_TOKEN, CHAT_ID, text) {
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   const body = new URLSearchParams({
