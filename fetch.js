@@ -6,14 +6,15 @@ const PRODUCT = {
   url: 'https://eraspace.com/eraspace/produk/honor-400-5g',
 };
 
-const WORKER_ENDPOINT = 'https://price-watcher-yourname.workers.dev/update';
+// ✅ Gunakan URL Worker kamu
+const WORKER_ENDPOINT = 'https://pantau-era.tifababisatu.workers.dev/update';
 
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto(PRODUCT.url, { waitUntil: 'networkidle' });
 
-  // Ambil harga dari halaman render penuh
+  // Cari harga di HTML render penuh
   const html = await page.content();
   const match = html.match(/Rp\s*([\d\.]+)/i);
   if (!match) {
@@ -24,6 +25,7 @@ const WORKER_ENDPOINT = 'https://price-watcher-yourname.workers.dev/update';
   const price = parseInt(match[1].replace(/\./g, ''), 10);
   console.log(`✅ ${PRODUCT.name}: Rp ${price.toLocaleString('id-ID')}`);
 
+  // Kirim hasil ke Worker
   await fetch(WORKER_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
