@@ -16,5 +16,5 @@ jobs:
           npm install playwright node-fetch
           npx playwright install --with-deps
 
-      - name: Fetch price
+      - name: Fetch price from Eraspace
         run: node fetch.js
